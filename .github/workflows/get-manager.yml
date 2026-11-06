@@ -557,13 +557,14 @@ jobs:
         run: echo "下载CI构建的KSU失败!"
 
       - name: 上传APK
-        # 说明：KSU_VERSION=34943 的用户自己有管理器，不上传；其他变体只要 manager-artifacts 目录存在 .apk 就上传
-        if: ${{ env.KSU_VERSION != '' && env.KSU_VERSION != '34943' }}
+        # 所有变体只要 manager-artifacts 里有 .apk 就上传（34943 的 APK 来自用户 fork Release）
+        if: ${{ env.KSU_VERSION != '' }}
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.ARTIFACT_PREFIX }}-Manager
           path: |
             manager-artifacts/**/*.apk
+          if-no-files-found: warn
 
       - name: 上传SUSFS模块
         if: steps.add_SUSFS.outcome == 'success'
