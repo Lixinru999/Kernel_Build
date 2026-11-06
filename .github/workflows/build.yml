@@ -1109,6 +1109,16 @@ jobs:
 
           patch -p1 < "$SUSFS_PATCH" || true
 
+          # 新版 SUSFS（v2.3.0+）在部分 GKI 子版本上会留下未被引用的静态函数，
+          # 内核开启 -Werror 时按 -Wunused-function 直接判失败；加 unused 属性即可，
+          # 函数仍会被使用它的代码正常调用（v2.1.0 无这两个函数，sed 自然不匹配）。
+          if [[ -f fs/susfs.c ]]; then
+            sed -i \
+              -e 's/^static struct cred \*susfs_switch_to_ksu_domain(void) {/static __attribute__((unused)) struct cred *susfs_switch_to_ksu_domain(void) {/' \
+              -e 's/^static void susfs_restore_creds(struct cred \*orig_cred) {/static __attribute__((unused)) void susfs_restore_creds(struct cred *orig_cred) {/' \
+              fs/susfs.c
+          fi
+
           # 主补丁应用后还原临时上下文，避免无关源码差异保留到最终产物
           if [[ "${{ inputs.android_version }}" == "android12" && "${{ inputs.kernel_version }}" == "5.10" ]]; then
             if [[ "$CURRENT_SUB" -le 43 ]]; then
